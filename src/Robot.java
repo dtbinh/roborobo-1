@@ -38,6 +38,8 @@ public class Robot implements Runnable, IRobot
     
     protected final double energy;
     protected final double throughput;
+    
+    public static int orderID = 0;
 
     public Robot(String hostname, OrderManagement management, double energy, double throughput)
     {
@@ -99,40 +101,55 @@ public class Robot implements Runnable, IRobot
        
         while (!Thread.interrupted() && com.isConnected() && false == bumper.value())
         {
-			//TODO implement this method        
-
-        	// 1. Aktuelles Element laden
-        	
-        	// TODO: hochladen
-        	int myOrder = 1;
+  
         	
         	
-        	// CartArea der Bestellung finden
-        	CartArea myCartArea = management.getCartArea(management.getOrderList().get(myOrder));
+        	// Order holen, Cart Area bestimmen
+        	// =====================================================================================
+        	
+        	int myOrderID = orderID; // statisch fuer alle Roboter
+           	orderID++; // Naechster Robotoer nimmt naechste Bestellung an
+        	
+        	log("fetching order no. " + myOrderID + "...");
+        	Order myOrder = management.getOrderList().get(myOrderID);
+        	CartArea myCartArea = management.getCartArea(myOrder);
+     
         	
         	// Freies Cart in der Area finden und Position speichern
-        	
-        	Position emptycart = new Position(0,0);
+        	Position nextHop = new Position(0,0);
+        	CartPosition emptyCart = null;
         	
         	for (CartPosition pos: management.getCartPositions(myCartArea))
         	{
         		if (management.getstate(pos) == ECartPositionState.EMPTY_CART)
         			{
-        				emptycart = pos.getCoordinates();
-        				log("Cart Position gefunden: " + emptycart.xPos + "," + emptycart.zPos);
+        				emptyCart = pos;
+        				log("Cart Position gefunden: " + emptyCart.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
         				break;
         			}
  	
         	}
         	
+        	nextHop = emptyCart.getCoordinates();
         	
         	// 2. Kart holen
-        	moveLogic.setWaipoint(emptycart.xPos*1000, emptycart.zPos*1000);
+        	moveLogic.setWaipoint(nextHop.xPos*1000, nextHop.zPos*1000);
         	log("On my way to Empty Cart.");
         	moveLogic.transportToCoordinates();
         	log("Reached Empty Cart.");
         	
-        	//myCart = management.takeCart(pos);
+        	log("taking cart.");
+        	Cart myCart = null;
+        	if ((myCart = management.takeCart(emptyCart)) != null)
+        	{
+        		log("Success.");
+        	}
+        	
+        	
+        	// zurueck zum amnfang
+        	
+//        	moveLogic.setWaipoint(10000, -1000);
+//        	moveLogic.transportToCoordinates();
         	
         	
         	// 3. Alle Elemente der Liste abarbeiten, ggf. neuen Kart holen
@@ -140,6 +157,9 @@ public class Robot implements Runnable, IRobot
         	
         	// 4. Kart wegbringen
         	
+        	
+        	// debug: disconecct
+        	com.disconnect();
         	
         	
         	
