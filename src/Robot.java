@@ -127,10 +127,12 @@ public class Robot implements Runnable, IRobot
         	
         	
         	// 2. Kart holen
-        	moveLogic.setWaipoint(emptycart.xPos, emptycart.zPos);
+        	moveLogic.setWaipoint(emptycart.xPos*1000, emptycart.zPos*1000);
         	log("On my way to Empty Cart.");
         	moveLogic.transportToCoordinates();
         	log("Reached Empty Cart.");
+        	
+        	//myCart = management.takeCart(pos);
         	
         	
         	// 3. Alle Elemente der Liste abarbeiten, ggf. neuen Kart holen
