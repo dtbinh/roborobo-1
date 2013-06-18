@@ -25,6 +25,7 @@ public class Simulation
 
 		management.addRobot(robot1);
 		management.addRobot(robot2);
+		
 
 		System.out.println("Start simulation of robot 1:");
 		thread1.start();

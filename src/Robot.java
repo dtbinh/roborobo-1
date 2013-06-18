@@ -8,6 +8,8 @@ import java.util.List;
 import de.hpi.sam.ordermanagement.Cart;
 import de.hpi.sam.ordermanagement.CartArea;
 import de.hpi.sam.ordermanagement.CartPosition;
+import de.hpi.sam.ordermanagement.ECartPositionState;
+import de.hpi.sam.ordermanagement.IOutStock;
 import de.hpi.sam.ordermanagement.IssuingPoint;
 import de.hpi.sam.ordermanagement.Order;
 import de.hpi.sam.ordermanagement.OrderItem;
@@ -26,7 +28,7 @@ public class Robot implements Runnable, IRobot
 {
 	public OrderManagement management;
     protected final String hostname;
-    protected final RobotCom com;
+    protected final RobotCom 	com;
     protected final RobotOmniDrive omniDrive;
     protected final RobotBumper bumper;
     protected final RobotNorthStar northStar;
@@ -64,6 +66,8 @@ public class Robot implements Runnable, IRobot
             System.out.println("Connecting...");
             com.connect();
             System.out.println("Connected.");
+            System.out.println("======================================.");
+            
             System.out.println("Driving...");
             drive();
         }
@@ -83,16 +87,61 @@ public class Robot implements Runnable, IRobot
     {
         com.disconnect();
     }
+    
+    
+    protected void log(String msg)
+    {
+    	System.out.println("[" + this.hashCode() + "] " + msg);
+    }
 
     protected void drive() throws InterruptedException
     {
        
         while (!Thread.interrupted() && com.isConnected() && false == bumper.value())
         {
-			//TODO implement this method
-           
-            
-        	moveLogic.setWaipoint(10 * 1000, -10 * 1000);
+			//TODO implement this method        
+
+        	// 1. Aktuelles Element laden
+        	
+        	// TODO: hochladen
+        	int myOrder = 1;
+        	
+        	
+        	// CartArea der Bestellung finden
+        	CartArea myCartArea = management.getCartArea(management.getOrderList().get(myOrder));
+        	
+        	// Freies Cart in der Area finden und Position speichern
+        	
+        	Position emptycart = new Position(0,0);
+        	
+        	for (CartPosition pos: management.getCartPositions(myCartArea))
+        	{
+        		if (management.getstate(pos) == ECartPositionState.EMPTY_CART)
+        			{
+        				emptycart = pos.getCoordinates();
+        				log("Cart Position gefunden: " + emptycart.xPos + "," + emptycart.zPos);
+        				break;
+        			}
+ 	
+        	}
+        	
+        	
+        	// 2. Kart holen
+        	moveLogic.setWaipoint(emptycart.xPos, emptycart.zPos);
+        	log("On my way to Empty Cart.");
+        	moveLogic.transportToCoordinates();
+        	log("Reached Empty Cart.");
+        	
+        	
+        	// 3. Alle Elemente der Liste abarbeiten, ggf. neuen Kart holen
+        	
+        	
+        	// 4. Kart wegbringen
+        	
+        	
+        	
+        	
+        	//moveLogic.setWaipoint(test* 1000, -1*test2 * 1000);
         	System.out.println("reached target: "+ moveLogic.transportToCoordinates());
            
             com.waitForUpdate();
