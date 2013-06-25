@@ -12,6 +12,7 @@ public class Simulation
 		 * 
 		 * For simulation purposes, we set these values in this main-method. 
 		 * Throughput + Energy is always 1.0 (100%).
+		 * 
 		 */
 		
 		final double energy = 0.3;

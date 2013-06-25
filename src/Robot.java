@@ -1,5 +1,9 @@
+ import gruppe8.RobotCPU;
+
 
 import static java.lang.Math.cos;
+
+
 import static java.lang.Math.sin;
 
 import java.util.ArrayList;
@@ -39,12 +43,6 @@ public class Robot implements Runnable, IRobot
     protected final double energy;
     protected final double throughput;
     
-    public static int orderID = 0;
-    public int robotID = 0;
-    public static int nextRobotID = 1;
-   
-    // Schwelle, ab wann der Roboter "nahe" einer Position ist
-    public static float near = 0.3f;
 
     public Robot(String hostname, OrderManagement management, double energy, double throughput)
     {
@@ -62,19 +60,10 @@ public class Robot implements Runnable, IRobot
         
         this.energy = energy;
         this.throughput = throughput;
-        
-        this.robotID = nextRobotID;
-        nextRobotID++;
-        
-        log("Hi, I'm Robot No. " + this.robotID);
-        
-        
+
     }
     
-    public String strPos(Position p)
-    {
-    	return p.xPos + "/" + p.zPos;
-    }
+
 
     public void run()
     {
@@ -106,195 +95,13 @@ public class Robot implements Runnable, IRobot
     {
         com.disconnect();
     }
-    
-    
-    protected void log(String msg)
-    {
-    	System.out.println("[" + this.robotID + "] " + msg);
-    }
-    
-    protected void warte(int zeit)
-    {
-    	try {
-			Thread.sleep(1500);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    }
-    
-    protected boolean iAmClose(Position p)
-    {
-    	if ((Math.abs(p.xPos - position().xPos) < near) && (Math.abs(p.zPos - position().zPos) < near))
-    		return true;
-    	else
-    		return false;
-    }
-    
-    protected void fahreZuTestzweckenGegenDenGelbenKegel()
-    {
-    	Position kegel = new Position(12.8f, -3.5f);
-    	log("Jetzt fahre ich gegen den Kegel!");
-    	goToPos(kegel);
-    }
 
-    
-    protected void goToPos(Position p) 
-    {
-    	moveLogic.setWaipoint(p.xPos*1000, p.zPos*1000);
-    	while (!moveLogic.driveToCoordinates() && !iAmClose(p))
-    	{
-    		log("On my way to " + p.xPos + "/" + p.zPos + " from " + position().xPos + "/" + position().zPos);
-    		
-    		// fahre ich auf zB den Warenkorb zu, koennte das Hindernis das Ziel sein
-    		if (moveLogic.getStatusObstacleFound() && !iAmClose(p))
-    		{
-    			log("Hindernis! Weiche aus.");
-    			crazyAusweichen(1);
-    		}
-    		
-    	}
-    	log("Reached Goal!");
-    }
-    
-    /**
-     *  Beschreibe einen formschoenen Haken um ein Hindernis zu umfahren.
-     *  Faktor (>0) beschreibt Groesse des Hakens
-     */
-    protected void crazyAusweichen(int f)
-    {    	
-    	
-    	// kleines stueck nach hinten fahren
-    	omniDrive.setVelocity(-200, -200*f, 0);
-    	warte(1500*f);
-    	omniDrive.setVelocity(0,0,0);
-    	
-    }
     
     protected void drive() throws InterruptedException
-    {
-       
-        while (!Thread.interrupted() && com.isConnected() && false == bumper.value())
-        {
-  
-        	
-        	
-        	// Order holen, Cart Area bestimmen
-        	// =====================================================================================
-        	
-        	
-        	log("Let's go!");
-        	
-//        	if(this.robotID == 2)
-//        	{	
-//        		log("XXXXXX");
-//        		goToPos(new Position(9, -8));
-//        		log("YYYYYYY");
-//        	}
-        	
-        	
-        	//TODO: eleganteres Laden von Orders als mit ID...
-        	int myOrderID = orderID; // statisch fuer alle Roboter
-           	orderID++; // Naechster Robotoer nimmt naechste Bestellung an
-        	
-        	log("fetching order no. " + myOrderID + "...");
-        	Order myOrder = management.getOrderList().get(myOrderID);
-        	CartArea myCartArea = management.getCartArea(myOrder);
-     
-        	
-        	// Freies Cart in der Area finden und Position speichern
-        	Position nextHop = new Position(0,0);
-        	CartPosition emptyCart = null;
-        	
-        	for (CartPosition pos: management.getCartPositions(myCartArea))
-        	{
-        		if (management.getstate(pos) == ECartPositionState.EMPTY_CART)
-        			{
-        				emptyCart = pos;
-        				log("Cart Position gefunden: " + emptyCart.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
-        				break;
-        			}
- 	
-        	}
-        	
-        	nextHop = emptyCart.getCoordinates();
-        	
-        	// 2. Kart holen
-        	
-        	log("Driving  to Empty Cart.");
-        	goToPos(nextHop);
-        	
-        	
-        	
-        	log("taking cart.");
-        	Cart myCart = null;
-        	if ((myCart = management.takeCart(emptyCart)) != null)
-        	{
-        		log("Habe den Kart angefordert!");
-        	}
-        	
-        	
-        	
-        	// 3. Alle Order Items abarbeitne, zum Issuing Point fahren, einladen
-        	
-        	log("Arbeite nun " + management.getOrderItemList(myOrder).size() + " Bestellungen ab.");
-        	
-        	for (OrderItem currentItem: management.getOrderItemList(myOrder))
-        	{
-        		
-        		// Finde den erstbesten Issuing Point fuer meinen Produkttyp
-        		IssuingPoint nextIP = management.getIssuingPoints(currentItem.getProductType()).get(0);
-        	
-        		log("fahre zum naechsten IP: " + strPos(nextIP.getCoordinates()));
-        		goToPos(nextIP.getCoordinates());
-        		
-        		// Lade Sachen ein
-        		// TODO: Kapazitaet beruecksichtigen
-        		if(management.load(currentItem.getAmount(), nextIP, myCart))
-        			log("Lade Sachen ein!");
-        		else
-        			log("Fehler beim Einladen :(");
-        	}
-        	
-        	
-        	// 4. Freie Position finden und Cart zurueckbringen
-        	
-        	log("bringe jetzt den Kart zurueck");
-        	
-        	// in designierter Cart Zone einen freien Platz finden
-        	CartPosition emptyPos = null;
-        	for (CartPosition pos: management.getCartPositions(myCartArea))
-        	{
-        		if (management.getstate(pos) == ECartPositionState.EMPTY)
-        			{
-        				emptyPos = pos;
-        				log("Leere Position gefunden: " + emptyPos.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
-        				break;
-        			}
- 	
-        	}
-        	
-        	goToPos(emptyPos.getCoordinates());
-        	
-        	log("Bin an leerer Position, gebe Cart zurueck...");
-        	if (management.finishOrder(myOrder, management.getCartPositions(myCartArea)))
-        		log("Cart zurueckgegeben!");
-        	else
-        		log("Fehler beim zurueckgeben des Carts... :( :(");
-        
-        	
-
-        	//fahreZuTestzweckenGegenDenGelbenKegel();
-        	
-        	
-        	
-        	//moveLogic.setWaipoint(test* 1000, -1*test2 * 1000);
-        	//System.out.println("reached target: "+ moveLogic.transportToCoordinates());
-           
-            com.waitForUpdate();
-           
-            System.out.println("DONE");
-        }
+    {    	
+       RobotCPU myCPU = new RobotCPU(this.management, this.moveLogic, this.omniDrive, this.northStar);
+       myCPU.run();
+    		   
     }
 
     /**
