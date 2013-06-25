@@ -73,6 +73,7 @@ public class FahrVerwaltung {
     	
     	cpu.log("Driving  to Empty Cart.");
     	fahreZu(p);
+    	stueckNachVorne();
     	
     	cpu.log("taking cart.");
     	Cart myCart = null;
@@ -145,6 +146,13 @@ public class FahrVerwaltung {
     	cpu.warte(1500*f);
     	cpu.OD.setVelocity(0,0,0);
     	
+    }
+    
+    protected void stueckNachVorne()
+    {
+    	cpu.OD.setVelocity(50, 0, 0);
+    	cpu.warte(1000);
+    	cpu.OD.setVelocity(0, 0, 0);
     }
 	
     protected boolean iAmClose(Position p)

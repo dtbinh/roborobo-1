@@ -27,6 +27,8 @@ public class StatusVerwaltung {
 	{
 		
 		Order myOrder = mgmt.getOrderList().get(0);
+		cpu.log("Habe neuen Auftrag: " + myOrder.hashCode());
+		
 		
 		// Order aus Liste der bereitstehenden Orders loeschen
 		mgmt.getOrderList().remove(myOrder);
