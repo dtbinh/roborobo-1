@@ -185,6 +185,13 @@ public class Robot implements Runnable, IRobot
         	
         	log("Let's go!");
         	
+//        	if(this.robotID == 2)
+//        	{	
+//        		log("XXXXXX");
+//        		goToPos(new Position(9, -8));
+//        		log("YYYYYYY");
+//        	}
+        	
         	
         	//TODO: eleganteres Laden von Orders als mit ID...
         	int myOrderID = orderID; // statisch fuer alle Roboter
