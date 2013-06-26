@@ -44,7 +44,7 @@ public class RobotCPU {
     	this.robotID = nextRobotID;
         nextRobotID++;
         
-        this.mgmt = mgmt;
+        this.mgmt = mgmt; // order management
         this.OD = yourOD; // omni drive
         this.ML = yourML; // move logic
         this.NS = yourNS; // north star
@@ -61,9 +61,9 @@ public class RobotCPU {
     
     public boolean run()
     {    	   	
-    	log("Beginne Ausfuehrung eines neuen Auftrags!");
-    	mySV.run();
-    	log("Ausgefuehrt!");
+    	log("Lade Statusverwaltung...");
+    	while(mySV.bearbeiteOrders())
+    		log("Order ausgefuehrt.");
        return true;
         
     }
@@ -93,7 +93,8 @@ public class RobotCPU {
     protected void warte(int zeit)
     {
     	try {
-			Thread.sleep(1500);
+			Thread.sleep(zeit);
+			this.log("backoffTime: " + zeit );
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

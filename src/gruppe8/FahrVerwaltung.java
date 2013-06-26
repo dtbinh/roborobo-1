@@ -56,31 +56,36 @@ public class FahrVerwaltung {
     	Position p = new Position(0,0);
     	CartPosition emptyCart = null;
     	
-    	for (CartPosition pos: StatusVerwaltung.mgmt.getCartPositions(myCartArea))
+    	cpu.warte((int)(Math.random()*3000));
+    	cpu.log("BackOffTime generated");
+    	
+    	Cart myCart = null;
+
+    	for (CartPosition pos: StatusVerwaltung.mgmt.getCartPositions(myCartArea))//cpu anders
     	{
-    		if (StatusVerwaltung.mgmt.getstate(pos) == ECartPositionState.EMPTY_CART)
+    		if (StatusVerwaltung.mgmt.getstate(pos) == ECartPositionState.EMPTY_CART)//cpu anders
     			{
-    				emptyCart = pos;
-    				// log("Cart Position gefunden: " + emptyCart.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
+    				emptyCart = pos; // Cart Position, auf der ein leerer Kart steht
+    		    
+    				cpu.log("Cart Position gefunden: " + emptyCart.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
     				break;
     			}
 	
     	}
-    	
+    
     	p = emptyCart.getCoordinates();
-    	
-    	// 2. Kart holen
-    	
-    	cpu.log("Driving  to Empty Cart.");
+        	
+    	cpu.log("Driving to Empty Cart.");
     	fahreZu(p);
     	stueckNachVorne();
     	
     	cpu.log("taking cart.");
-    	Cart myCart = null;
-    	if ((myCart = cpu.mgmt.takeCart(emptyCart)) != null)
+//    	Cart myCart = null;   // ist stattdessen ueber der for schleife deklariert
+    	if ((myCart = StatusVerwaltung.mgmt.takeCart(emptyCart)) != null)
     	{
     		cpu.log("Habe den Kart angefordert!");
     	}
+    	
     	
     	return myCart;
     	
@@ -138,6 +143,12 @@ public class FahrVerwaltung {
      *  Beschreibe einen formschoenen Haken um ein Hindernis zu umfahren.
      *  Faktor (>0) beschreibt Groesse des Hakens
      */
+    
+    
+    
+    
+    
+    
     protected void ausweichen(int f)
     {    	
     	
@@ -150,7 +161,7 @@ public class FahrVerwaltung {
     
     protected void stueckNachVorne()
     {
-    	cpu.OD.setVelocity(50, 0, 0);
+    	cpu.OD.setVelocity(70, 0, 0);
     	cpu.warte(1000);
     	cpu.OD.setVelocity(0, 0, 0);
     }

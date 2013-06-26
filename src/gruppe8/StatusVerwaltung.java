@@ -21,11 +21,13 @@ public class StatusVerwaltung {
 	}
 	
 	/** 
-	 * Order holen und ausfuehre
+	 * Order holen und ausfuehren
 	 */
-	public void run()
+	public boolean bearbeiteOrders()
 	{
-		
+		cpu.warte((int)(Math.random()*3000)); // Wartezeit, um zu verhindern, dass 2mal der selbe Auftrag aufgenommen wird
+    	cpu.log("BackOffTime generated");
+    	
 		Order myOrder = mgmt.getOrderList().get(0);
 		cpu.log("Habe neuen Auftrag: " + myOrder.hashCode());
 		
@@ -33,7 +35,7 @@ public class StatusVerwaltung {
 		// Order aus Liste der bereitstehenden Orders loeschen
 		mgmt.getOrderList().remove(myOrder);
 		
-		fuehreAuftragAus(myOrder);
+		return fuehreAuftragAus(myOrder);
 	}
 	
 	/**
@@ -43,6 +45,7 @@ public class StatusVerwaltung {
 	 */
 	public boolean fuehreAuftragAus(Order myOrder)
 	{
+		
 		
 		// CartArea bestimmen und daraus einen freien Kart holen
     	CartArea myCartArea = mgmt.getCartArea(myOrder);
