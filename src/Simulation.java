@@ -7,6 +7,7 @@ public class Simulation
 	{
 		OrderManagement management = new OrderManagement();
 		
+		
 		/*
 		 * Throughput vs. energy 
 		 * 

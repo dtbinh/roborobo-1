@@ -1,6 +1,7 @@
  import gruppe8.RobotCPU;
 
 
+
 import static java.lang.Math.cos;
 
 
@@ -39,6 +40,7 @@ public class Robot implements Runnable, IRobot
     protected final MoveLogic moveLogic;
     protected final RobotDistanceSensorArray distanceSensorArray;
     protected final RobotPowerManagement powerManagement;
+//    public CartPosManagement cpm;
     
     protected final double energy;
     protected final double throughput;
@@ -99,7 +101,7 @@ public class Robot implements Runnable, IRobot
     
     protected void drive() throws InterruptedException
     {    	
-       RobotCPU myCPU = new RobotCPU(this.management, this.moveLogic, this.omniDrive, this.northStar);
+       RobotCPU myCPU = new RobotCPU (this.management, this.moveLogic, this.omniDrive, this.northStar, this.bumper);
        myCPU.run();
     		   
     }

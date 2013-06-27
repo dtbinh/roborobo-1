@@ -26,7 +26,7 @@ public class StatusVerwaltung {
 	public boolean bearbeiteOrders()
 	{
 		cpu.warte((int)(Math.random()*3000)); // Wartezeit, um zu verhindern, dass 2mal der selbe Auftrag aufgenommen wird
-    	cpu.log("BackOffTime generated");
+//    	cpu.log("BackOffTime generated");
     	
 		Order myOrder = mgmt.getOrderList().get(0);
 		cpu.log("Habe neuen Auftrag: " + myOrder.hashCode());

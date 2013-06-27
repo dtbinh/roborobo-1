@@ -5,6 +5,8 @@ import de.hpi.sam.robotino.Position;
 import de.hpi.sam.robotino.actor.RobotOmniDrive;
 import de.hpi.sam.robotino.logic.MoveLogic;
 import de.hpi.sam.robotino.sensor.RobotNorthStar;
+import de.hpi.sam.robotino.sensor.RobotBumper;
+import de.hpi.sam.robotino.*;
 
 public class RobotCPU {
 	
@@ -20,6 +22,7 @@ public class RobotCPU {
     
     // Eindeutige Robot ID (fuer Logs), wird im Constructor initialisiert
     public int robotID = 0;
+    public ID comID;
     public static int nextRobotID = 1;
     
     protected StatusVerwaltung mySV;
@@ -29,6 +32,7 @@ public class RobotCPU {
     public RobotOmniDrive OD;
     public MoveLogic ML;
     public RobotNorthStar NS;
+    public RobotBumper bump;
 	
 	
     // ==================================================================
@@ -38,7 +42,7 @@ public class RobotCPU {
     /**
      * Constructor / Initialisierung
      */
-    public RobotCPU(OrderManagement mgmt, MoveLogic yourML, RobotOmniDrive yourOD, RobotNorthStar yourNS)
+    public RobotCPU(OrderManagement mgmt, MoveLogic yourML, RobotOmniDrive yourOD, RobotNorthStar yourNS, RobotBumper bump)
     {
     	// Roboter bennenen fuer Uebersicht in Logs
     	this.robotID = nextRobotID;
@@ -48,6 +52,7 @@ public class RobotCPU {
         this.OD = yourOD; // omni drive
         this.ML = yourML; // move logic
         this.NS = yourNS; // north star
+        this.bump = bump;
         
         // FahrVerwaltung und StatusVerwaltung initialisieren
         this.myFV = new FahrVerwaltung(this);
@@ -57,7 +62,15 @@ public class RobotCPU {
         
         log("Roboter aktiviert mit ID Nummer " + this.robotID);
         
+        //Roboter bei der Wlan Komponente anmelden
+        this.comID = this.mgmt.register("" + robotID);
+        log("Roboter an WLAN-Komponente angemeldet! comID: " + comID);
+        
+        //
+        
     }
+    
+    
     
     public boolean run()
     {    	   	
