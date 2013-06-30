@@ -7,17 +7,17 @@ import static java.lang.Math.cos;
 
 import static java.lang.Math.sin;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import de.hpi.sam.ordermanagement.Cart;
-import de.hpi.sam.ordermanagement.CartArea;
-import de.hpi.sam.ordermanagement.CartPosition;
-import de.hpi.sam.ordermanagement.ECartPositionState;
-import de.hpi.sam.ordermanagement.IOutStock;
-import de.hpi.sam.ordermanagement.IssuingPoint;
-import de.hpi.sam.ordermanagement.Order;
-import de.hpi.sam.ordermanagement.OrderItem;
+//import java.util.ArrayList;
+//import java.util.List;
+//
+//import de.hpi.sam.ordermanagement.Cart;
+//import de.hpi.sam.ordermanagement.CartArea;
+//import de.hpi.sam.ordermanagement.CartPosition;
+//import de.hpi.sam.ordermanagement.ECartPositionState;
+//import de.hpi.sam.ordermanagement.IOutStock;
+//import de.hpi.sam.ordermanagement.IssuingPoint;
+//import de.hpi.sam.ordermanagement.Order;
+//import de.hpi.sam.ordermanagement.OrderItem;
 import de.hpi.sam.ordermanagement.OrderManagement;
 import de.hpi.sam.robotino.IRobot;
 import de.hpi.sam.robotino.Position;
@@ -40,7 +40,6 @@ public class Robot implements Runnable, IRobot
     protected final MoveLogic moveLogic;
     protected final RobotDistanceSensorArray distanceSensorArray;
     protected final RobotPowerManagement powerManagement;
-//    public CartPosManagement cpm;
     
     protected final double energy;
     protected final double throughput;
@@ -101,7 +100,7 @@ public class Robot implements Runnable, IRobot
     
     protected void drive() throws InterruptedException
     {    	
-       RobotCPU myCPU = new RobotCPU (this.management, this.moveLogic, this.omniDrive, this.northStar, this.bumper);
+       RobotCPU myCPU = new RobotCPU (this.management, this.moveLogic, this.omniDrive, this.northStar, this.bumper, this.distanceSensorArray);
        myCPU.run();
     		   
     }

@@ -1,6 +1,5 @@
 package gruppe8;
 
-import java.util.HashMap;
 import java.util.List;
 
 import de.hpi.sam.ordermanagement.*;
@@ -8,73 +7,76 @@ import de.hpi.sam.ordermanagement.*;
 import de.hpi.sam.robotino.ID;
 import de.hpi.sam.robotino.Position;
 
+
 public class FahrVerwaltung {
 	
 	RobotCPU cpu;
+	boolean obstacleFound = false;
+	
 	
 	FahrVerwaltung(RobotCPU yourCPU)
 	{
 		this.cpu = yourCPU;
 	}
 	
-//	private int manoeveranzahl = 0;
-//	private boolean oftausgewichen = false;
 	
 	// HAUPTFUNKTIONEN
 	
     public void fahreZu(Position p) 
     {
+
     	cpu.ML.setWaipoint(p.xPos*1000, p.zPos*1000);
-    	while (!cpu.ML.driveToCoordinates() && !iAmClose(p))
+
+    	while ((!cpu.ML.driveToCoordinates() && !iAmClose(p)))
     	{
     		cpu.log("Fahre nach " + p.xPos + "/" + p.zPos + ", bin gerade " + cpu.position().xPos + "/" + cpu.position().zPos);
     		
     		// fahre ich auf zB den Warenkorb zu, koennte das Hindernis das Ziel sein
-    		if ((cpu.ML.getStatusObstacleFound() && !iAmClose(p)) || (cpu.bump.value()))
+    		if ((cpu.ML.getStatusObstacleFound() && !iAmClose(p)))
     		{
     			cpu.log("Hindernis! Weiche aus.");
-    			if (cpu.bump.value())
-    			{
-    				cpu.log("Bumper aktiviert");
-    			}
-    			else
-    			{
-    				cpu.log("Bumper NICHT aktiviert");
-    			}
+
     			ausweichenFahreZu(1);
     		}
     		
     	}
     	cpu.log("Reached Goal!");
     }
+    
+    /* Die Methode transportiereZu() (bzw. die darin aufgerufene transportToCoordinates()
+     * hat uns erhebliche Probleme bereitet. Da durch die Blockade des vorderen Sensors Hindernisse
+     * teilweise nicht erkannt werden können, bleiben unsere Roboter an Hindernissen stecken oder 
+     * kollidieren mit anderen Robotern, die nicht oder erst zu spät als Hindernis erkannt werden.
+     * Dies führt dazu, dass unsere Roboter ihre Aufträge nicht abschließen können bzw. sich
+     * gegenseitig dabei behindern (lediglich in Einzelfällen hat es ein Roboter geschafft seinen
+     * Warenkorb wieder in der CartArea zu positionieren.
+     */
 	
     public void transportiereZu(Position p)
     {
     	cpu.ML.setWaipoint(p.xPos*1000, p.zPos*1000);
-    	while ((!cpu.ML.transportToCoordinates() && !iAmClose(p)))
+    	rotieren();
+    	while ((!transportToCoordinates() && !iAmClose(p)))
     	{
     		cpu.log("Transportiere nach " + p.xPos + "/" + p.zPos + ", bin gerade " + cpu.position().xPos + "/" + cpu.position().zPos);
     		
+    		
     		// fahre ich auf zB den Warenkorb zu, koennte das Hindernis das Ziel sein
-    		if ((cpu.ML.getStatusObstacleFound() && !iAmClose(p))  || (cpu.bump.value()))
+    		if ((this.obstacleFound && !iAmClose(p)))
     		{
     			cpu.log("Hindernis! Weiche aus.");
-    			if (cpu.bump.value())
-    			{
-    				cpu.log("Bumper aktiviert");
-    			}
-    			else
-    			{
-    				cpu.log("Bumper NICHT aktiviert");
-    			}
-    			cpu.log("bumperValue: ");
-    			ausweichenTransportiereZu(1);
+    			ausweichenFahreZu(1);
     		}
     		
     	}
     	cpu.log("Reached Goal!");
     }
-    
+
+    /*
+	Die Methode nimmCartauf() regelt die Suche nach einem freien Cart, wobei bereits 
+	reservierte Carts per Nachrichten gekennzeichet werden, bis hin zur eigentlich Aufnahmen
+	des Carts.
+	*/
 
     public Cart nimmCartAuf(CartArea myCartArea)
     {
@@ -90,15 +92,7 @@ public class FahrVerwaltung {
     	boolean cartBesetzt = false;
     	
     	Cart myCart = null;
-    	
-    	
-    	// WICHTIG ! ! ! 
-    	// messageList enthaelt einen Nullpointer, nachdem wir getCartpositions hineingespeichert haben
-    	// Code funktioniert auch so, allerdings ohne Abfrage, ob CartPositions bereits angefahren werden
-    	// fehler NICHT gefunden
-    	// TODO 
-    	
-    	
+    	 	
 		messageList = cpu.mgmt.receiveMessages(cpu.comID);
     	cpu.log("Nachrichtenabfrage erfolgt");
 
@@ -107,7 +101,7 @@ public class FahrVerwaltung {
     		
     		if (messageList != null)
     		{	
-    			cpu.log("BEI MIR GIBT’S NACHRICHTEN GOTTVERDAMMT!");
+    			cpu.log("Nachrichten erfolgreich erhalten.");
 	    		for (Object count : messageList)
 	    		{
 	    			
@@ -123,8 +117,10 @@ public class FahrVerwaltung {
     				
 	    				for (ID tempParticipant: communicationParticipants)
 	    				{	
-	    					cpu.mgmt.sendMessage(cpu.comID, emptyCart, tempParticipant);
-	    					cpu.log("message gesendet an: " + tempParticipant);
+	    					if (tempParticipant != this.cpu.comID) {
+	    						cpu.mgmt.sendMessage(cpu.comID, emptyCart, tempParticipant);
+	    						cpu.log("message gesendet an: " + tempParticipant);
+	    					}
 	    				}
     					
     				cpu.log("Cart Position gefunden: " + emptyCart.getCoordinates().xPos + "," + emptyCart.getCoordinates().zPos);
@@ -186,12 +182,15 @@ public class FahrVerwaltung {
 		IssuingPoint nextIP = cpu.mgmt.getIssuingPoints(currentItem.getProductType()).get(0);
 	
 		cpu.log("fahre zum naechsten IP: " + cpu.strPos(nextIP.getCoordinates()));
-		fahreZu(nextIP.getCoordinates());
+		transportiereZu(nextIP.getCoordinates());
 		
 		// Lade Sachen ein
 		// TODO: Kapazitaet beruecksichtigen
-		if(cpu.mgmt.load(currentItem.getAmount(), nextIP, myCart))
+		
+		
+		if(cpu.mgmt.load(currentItem.getAmount(), nextIP, myCart)) {
 			cpu.log("Lade Sachen ein!");
+		}	
 		else
 			cpu.log("Fehler beim Einladen :(");
     }
@@ -208,55 +207,24 @@ public class FahrVerwaltung {
     
     
     protected void ausweichenTransportiereZu(int f)
-    {    	
-    	
-    	// kleines stueck nach hinten fahren
-
+    {   
     	cpu.OD.setVelocity(-200, -200*f, 0);
     	cpu.warte(1000);
     	cpu.OD.setVelocity(0,0,0);
+    	
+
+
+
+
     }
     
     protected void ausweichenFahreZu(int f)
     {    	
-    	
-    	// kleines stueck nach hinten fahren
-
-    	cpu.OD.setVelocity(-200, -200*f, 0);
+    
+    	this.cpu.OD.setVelocity(0, -100, 0);
     	cpu.warte(1000);
-    	cpu.OD.setVelocity(0,0,0);
-//    	cpu.warte((int)(Math.random()*5000));
-//    	if (manoeveranzahl > 2)
-//    	{
-//    		oftausgewichen = true;
-//    	}
-//    	if (!oftausgewichen)
-//    	{	
-//    		cpu.OD.setVelocity(0, 0, 40);
-//    	}
-//    	else
-//    	{
-//    		cpu.OD.setVelocity(0, 0, -40);
-//    	}
-//    	float x = cpu.position().xPos;
-//    	float z = cpu.position().zPos;
-//
-//
-//    	if (manoeveranzahl <= 5 )
-//    	{
-//        	cpu.log("Position: " + x + ", " + z + " ; weiche nun aus");
-//        	weicheweg(x,z);
-//    	}
-//    	else
-//    	{
-//    		//TODO was wenn der zu oft ausweicht und feststeckt?
-//    	}
-
-//    	cpu.warte(1500*f);
-//    	cpu.OD.setVelocity(0,0,0);
-//    	cpu.OD.setVelocity(150, 0, 0);
-//    	cpu.warte(2000*f);
-//    	cpu.warte((int)(1000+(Math.random()*3000)));
+    	this.cpu.OD.setVelocity(0, 0, 0);
+    	
     }
     
     protected void stueckNachVorne()
@@ -276,36 +244,322 @@ public class FahrVerwaltung {
     
     
     
+   
+    private boolean rotieren() {
+    	cpu.log("ROTOR!!!");
+    	float currentOrientation;
+		float currentSpeed = 0;
+		double orientationRobotCurrent[] =
+		{
+				0, 0
+		};
+		double vectorToRobotCurrent[] =
+		{
+				0, 0
+		};
+		double tempX, tempZ, length, x1, y1, angleDifference, angle, relation;
 
+		// System.out.println("Relation: " + relation);
+		float rotationValue = 0;
+
+		this.cpu.ML.resetStatus();
+    	
+    	do
+    	{
+			// Get current orientation via NorthStar
+			currentOrientation = cpu.NS.posTheta();
+			// Get the normalized vector of the current orientation with length
+			// 1 from the local perspective of the robot
+			orientationRobotCurrent[0] = Math.sin(currentOrientation);
+			orientationRobotCurrent[1] = Math.cos(currentOrientation);
+			// Get the current position of the robot via northStar
+			vectorToRobotCurrent[0] = cpu.NS.posX();
+			vectorToRobotCurrent[1] = cpu.NS.posZ();
+			// Derive the vector between the current position of the robot and
+			// the target
+			tempX = this.cpu.ML.getWaypointX() - vectorToRobotCurrent[0];
+			tempZ = this.cpu.ML.getWaypointZ() - vectorToRobotCurrent[1];
+			// Derive the length of the defined waypoint
+			length = Math.sqrt(tempX * tempX + tempZ * tempZ);
+			// If length is equal to zero the robot is already at the target.
+			// Additionally we need to avoid the devision by zero (see below)
+			if (length == 0)
+			{
+				return true;
+			}
+			// Derive the normalized vector from the robot to the target
+			x1 = tempX / length;
+			y1 = tempZ / length;
+			// Derive the angle between the orientation of the robot and the
+			// vector to the target
+			angleDifference = orientationRobotCurrent[0] * x1 + orientationRobotCurrent[1] * y1;
+			// ...
+			angle = Math.acos(angleDifference);
+//			cpu.log("WINKEL: "+angle);
+
+			// Calculate if current orientation of the robot is on the left or
+			// the right side of the vector to the target
+			relation = orientationRobotCurrent[0] * tempZ - orientationRobotCurrent[1] * tempX;
+
+			// Depending on the relation we need to invert the angle
+			if (relation > 0)
+			{
+				angle = angle * -1;
+			}
+			// If it is required to change the orientation towards the target
+			
+				// System.out.println(Math.toDegrees(angle));
+				// Get the angle in degree
+				double degree = Math.toDegrees(angle);
+				// If the angle is bigger than 60 or smaller then -60
+				if (Math.abs(degree) > 60)
+				{
+					// If it is bigger
+					if (angle > 0)
+					{
+						// Rotate with value 60
+						rotationValue = 5;
+
+					}
+					// if it is smaller
+					else
+					{
+						// rotate with value -60
+						rotationValue = -5;
+
+					}
+				
+				// If the difference of the angle between the current
+				// orientation of the robot and the vector to the target is
+				// smaller the 60, we use directly the angle for
+				// the rotation
+				
+			}
+			
     
     
- // fahre zu fuer die Ausweichmethode
-// 	public void weicheweg(float x, float z) 
-// 	{
-// 		
-// 		if (!oftausgewichen)
-// 		{
-// 			cpu.ML.setWaipoint((x+1), (z+1));
-// 		}
-// 		else
-// 		{
-// 	 		cpu.ML.setWaipoint((x-1), (z-1));
-// 		}
-//    	cpu.log("weiche nach : " + (x+1) + ", " + (z+1) + " aus");
-// 		while (!cpu.ML.transportToCoordinates())
-//    	{
-//    		if (cpu.ML.getStatusObstacleFound())
-//    		{
-//    			manoeveranzahl++;
-//    			cpu.log("AAACHTUNG NOCHMAL Hindernis! Weiche aus. Manoever: " + manoeveranzahl + " ;boolean: "+ oftausgewichen);
-//
-//    			ausweichen(1);
-//    		}
-//    	}
-// 	}
+		this.cpu.OD.setVelocity(0, 0, rotationValue);
+	    cpu.warte(1000);
+	    this.cpu.OD.setVelocity(10, 0, 0);
+	    cpu.warte(1000);
+	    } while (Math.abs(angle)>0.05);
+	    this.cpu.OD.setVelocity(0, 0, 0);
+	    return true;
+    }
+
+	public boolean transportToCoordinates()
+	{
+
+		cpu.log("THE TRANSPORTER!!!");
+		boolean targetReached = false;
+		float maxMovementSpeed = 500;
+		
+		float currentOrientation;
+		float currentSpeed = 0;
+		double orientationRobotCurrent[] =
+		{
+				0, 0
+		};
+		double vectorToRobotCurrent[] =
+		{
+				0, 0
+		};
+		double tempX, tempZ, length, x1, y1, angleDifference, angle, relation;
+
+		// System.out.println("Relation: " + relation);
+		int maxMoves = 10000;
+		float rotationValue = 0;
+
+
+		for (int i = 0; i <= maxMoves; i++)
+		{
+
+			// Get current orientation via NorthStar
+			currentOrientation = cpu.NS.posTheta();
+			// Get the normalized vector of the current orientation with length
+			// 1 from the local perspective of the robot
+			orientationRobotCurrent[0] = Math.sin(currentOrientation);
+			orientationRobotCurrent[1] = Math.cos(currentOrientation);
+			// Get the current position of the robot via northStar
+			vectorToRobotCurrent[0] = cpu.NS.posX();
+			vectorToRobotCurrent[1] = cpu.NS.posZ();
+			// Derive the vector between the current position of the robot and
+			// the target
+			tempX = this.cpu.ML.getWaypointX() - vectorToRobotCurrent[0];
+			tempZ = this.cpu.ML.getWaypointZ() - vectorToRobotCurrent[1];
+			// Derive the length of the defined waypoint
+			length = Math.sqrt(tempX * tempX + tempZ * tempZ);
+			// If length is equal to zero the robot is already at the target.
+			// Additionally we need to avoid the devision by zero (see below)
+			if (length == 0)
+			{
+				return true;
+			}
+			// Derive the normalized vector from the robot to the target
+			x1 = tempX / length;
+			y1 = tempZ / length;
+			// Derive the angle between the orientation of the robot and the
+			// vector to the target
+			angleDifference = orientationRobotCurrent[0] * x1 + orientationRobotCurrent[1] * y1;
+			// ...
+			angle = Math.acos(angleDifference);
+//			cpu.log("WINKEL: "+angle);
+
+			// Calculate if current orientation of the robot is on the left or
+			// the right side of the vector to the target
+			relation = orientationRobotCurrent[0] * tempZ - orientationRobotCurrent[1] * tempX;
+
+			// Depending on the relation we need to invert the angle
+			if (relation > 0)
+			{
+			angle = angle * -1;
+			}
+			// If it is required to change the orientation towards the target
+			if (Math.abs(angle) > 0.05)
+			{
+				// System.out.println(Math.toDegrees(angle));
+				// Get the angle in degree
+				double degree = Math.toDegrees(angle);
+				// If the angle is bigger than 60 or smaller then -60
+				if (Math.abs(degree) > 60)
+				{
+					// If it is bigger
+					if (angle > 0)
+					{
+						// Rotate with value 60
+						rotationValue = 60;
+
+					}
+					// if it is smaller
+					else
+					{
+						// rotate with value -60
+						rotationValue = -60;
+
+					}
+				}
+				// If the difference of the angle between the current
+				// orientation of the robot and the vector to the target is
+				// smaller the 60, we use directly the angle for
+				// the rotation
+				else
+				{
+					rotationValue = (float) Math.toDegrees(angle);
+
+				}
+			}
+			// If we still not at the target position
+			if (length > 50)
+			{
+				// If we are more or less looking towards the target position
+				if (Math.abs(angle) <= 0.05 + 0.5)
+				{
+					// System.out.println("Distance: " + (length /
+					// MoveLogic.fieldsToAccelerate) );
+					// If we are far away from the target position ...
+					if ((length / 2) >= 1000)
+					{
+						// ... and the maximum allowed speed is not reached ...
+						if (currentSpeed < maxMovementSpeed)
+						{
+							// ... we accelerate with a quadratic acceleration
+							// factor (+1) because if the robot is not moving it
+							// won't start moving anyway
+							currentSpeed = ((float) Math.pow((currentSpeed / maxMovementSpeed), 2) + currentSpeed
+									/ maxMovementSpeed)
+									* maxMovementSpeed + 1;// currentSpeed
+																// +
+																// (50*(MoveLogic.sleepTime*(float)0.001))
+																// ;
+							// If we have derived a value for the speed bigger
+							// than the maximum-allowed speed ...
+							if (currentSpeed >= maxMovementSpeed)
+							{
+								// We set it to the maximum speed
+								currentSpeed = maxMovementSpeed;
+							}
+						}
+					}
+					else
+					{
+
+						// Braking curve: ln(x/4+0,13) + 2
+						// We brake according to a logarithmic function over the
+						// distance to the target position
+						currentSpeed = (float) (Math.log((length / (1000 * 2)) / 4 + 0.13) + 2)
+								* maxMovementSpeed;
+					}
+				}
+				// If have reached (+/- the threshold) the target position, we
+				// stop:
+				else
+				{
+					currentSpeed = 0;
+				}
+
+				// We need to consider potential obstacles
+				if (this.maxVoltageObstacleWithPuck() > 0.3 && Math.abs(angle) <= 50 + 0.5)
+				{
+					// We get the maximum voltage of the three distance-sensors
+					// at the front
+					float maxVoltage = this.maxVoltageObstacleWithPuck();
+					// max voltage = 2.4
+					cpu.log("" + maxVoltage);
+					currentSpeed = (float) ((float) ((1.5 - maxVoltage)) / 2.4 * maxMovementSpeed);
+					// If we have already reached the target position, we stop
+					// and return false
+					if (currentSpeed <= 50)
+					{
+						this.cpu.OD.setVelocity(0, 0, 0);
+						obstacleFound = true;
+						// We have not reached the target-position
+						return false;
+					}
+
+				}
+
+				// Now we set the values
+				this.cpu.OD.setVelocity(currentSpeed, 0, rotationValue);
+			}
+			// If we have reached the target position we stop the robot and
+			// return true
+			if (length <= 50)
+			{
+				this.cpu.OD.setVelocity(0, 0, 0);
+				// We have not found an obstacle before we have reached the
+				// target position
+				obstacleFound = false;
+				return true;
+			}
+
+			try
+			{
+
+				Thread.currentThread();
+				// Now we put the thread into sleep for the specified time
+				// period
+				Thread.sleep(50);// sleep for 50 Ms
+
+			}
+			catch (InterruptedException ie)
+			{
+				// If this thread was interrupted by another thread
+			}
+
+		}
+
+		return false;
+	}
+
+	private float maxVoltageObstacleWithPuck()
+	{
+
+		float maxVoltage = Math.max(this.cpu.dsa.getDinstanceSensorVoltage(2),
+				this.cpu.dsa.getDinstanceSensorVoltage(9));
+
+		return maxVoltage;
+	}
     
-    
-    
-}
+}    
 
 

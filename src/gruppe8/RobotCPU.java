@@ -5,7 +5,7 @@ import de.hpi.sam.robotino.Position;
 import de.hpi.sam.robotino.actor.RobotOmniDrive;
 import de.hpi.sam.robotino.logic.MoveLogic;
 import de.hpi.sam.robotino.sensor.RobotNorthStar;
-import de.hpi.sam.robotino.sensor.RobotBumper;
+import de.hpi.sam.robotino.sensor.*;
 import de.hpi.sam.robotino.*;
 
 public class RobotCPU {
@@ -33,6 +33,7 @@ public class RobotCPU {
     public MoveLogic ML;
     public RobotNorthStar NS;
     public RobotBumper bump;
+    public RobotDistanceSensorArray dsa;
 	
 	
     // ==================================================================
@@ -42,7 +43,7 @@ public class RobotCPU {
     /**
      * Constructor / Initialisierung
      */
-    public RobotCPU(OrderManagement mgmt, MoveLogic yourML, RobotOmniDrive yourOD, RobotNorthStar yourNS, RobotBumper bump)
+    public RobotCPU(OrderManagement mgmt, MoveLogic yourML, RobotOmniDrive yourOD, RobotNorthStar yourNS, RobotBumper bump, RobotDistanceSensorArray dsa)
     {
     	// Roboter bennenen fuer Uebersicht in Logs
     	this.robotID = nextRobotID;
@@ -52,7 +53,8 @@ public class RobotCPU {
         this.OD = yourOD; // omni drive
         this.ML = yourML; // move logic
         this.NS = yourNS; // north star
-        this.bump = bump;
+        this.bump = bump; // Bumper
+        this.dsa = dsa;   // distanceSensorArray
         
         // FahrVerwaltung und StatusVerwaltung initialisieren
         this.myFV = new FahrVerwaltung(this);
@@ -107,7 +109,7 @@ public class RobotCPU {
     {
     	try {
 			Thread.sleep(zeit);
-			this.log("backoffTime: " + zeit );
+//			this.log("backoffTime: " + zeit );
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
